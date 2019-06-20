@@ -1,0 +1,212 @@
+/*	COMP20005, Assignment 1.
+	Gazi Mufti Mahmood. Student ID - 884041
+	Moto - Programming is Fun!
+	April, 2018.
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+
+
+#define MAX_ARRAY_SIZE 10000
+#define DATA 5			 		// Data per line
+#define DAYS_YEAR_NO_FEB 337	// Days in a yaer without february
+#define END_DATE 1				// Including the End Date
+#define NGPRS
+
+/* function prototypes */
+int readfile(int yyyy[], int mm[], int dd[], int day[], int daycount[]);
+int mygetchar();
+void S1_print(int yyyy[], int mm[], int dd[], int daycount[], 
+	int line, int key);
+void avg_ped_month(int yyyy[], int mm[], int daycount[], int key);
+int days_year(int sdd, int smm, int syyyy, int dd, int mm, int yyyy);
+
+
+int
+main(int argc, char *argv[]) {
+	// Making arrays, their key and the total datalines read.
+	int yyyy[MAX_ARRAY_SIZE], mm[MAX_ARRAY_SIZE], dd[MAX_ARRAY_SIZE];
+	int day[MAX_ARRAY_SIZE], daycount[MAX_ARRAY_SIZE];
+	int line, key;
+
+    // Stage 1
+    line = readfile(&yyyy[0], &mm[0], &dd[0], &day[0], &daycount[0]);
+    
+    // last key of the array is one less than the line
+    key = line - 1;
+    S1_print(&yyyy[0], &mm[0], &dd[0], &daycount[0], line, key);
+    
+    /* Stage 2
+    	*/
+    int range;
+    double coverage;
+    range = days_year(dd[0], mm[0], yyyy[0], dd[key], mm[key],
+    	yyyy[key]);
+    coverage = ((1.0*line)/range)*100;
+    
+    printf("S2: range spanned	= %d days\n", range);
+    printf("S2: coverage ratio	= %.1f%%\n", coverage);
+    printf("\n");
+    
+    // Stage 3
+    avg_ped_month(&yyyy[0], &mm[0], &daycount[0], key);
+    
+    // Stage 4
+    
+    
+    return 0;
+}
+
+// Comment
+int
+readfile(int yyyy[], int mm[], int dd[], int day[], int daycount[]){
+	char cc;
+	int line, number, remainder, i;
+	line = number = i = 0;
+    while ((cc = mygetchar()) != EOF){
+    	if (cc == '\n'){
+    		line += 1;
+    	}
+    	if (line > 1){
+    		line = 0;
+    		break;
+    	}
+    }    
+    // Adding the values to respective arrays
+    while (scanf("%d", &number) != EOF){
+    	i += 1;
+    	remainder = i % DATA;
+    	if ( remainder == 1){
+    		yyyy[line] = number;
+    	} else if ( remainder == 2){
+    		mm[line] = number;
+    	} else if ( remainder == 3){
+    		dd[line] = number;
+    	} else if ( remainder == 4){
+    		day[line] = number;
+    	} else if( remainder == 0){
+    		daycount[line] = number;
+    		line += 1;
+    	} else {
+    		printf("Invalid Input. File might be corrupted.\n");
+    	}
+    }
+    return line;
+}
+
+int
+mygetchar(){
+	int c;
+	while ((c=getchar())=='\r') {
+	}
+	return c;
+}
+
+
+
+// Prints necessary data for Stage 1
+void
+S1_print(int yyyy[], int mm[], int dd[], int daycount[], int line, int key){
+	printf("S1: total data lines 	= %d\n", line);
+    printf("S1: first data line 	= %02d/%02d/%04d, %d people counted\n",
+    	dd[0], mm[0], yyyy[0], daycount[0]);
+    printf("S1: last data line  	= %02d/%02d/%04d, %d people counted\n",
+    	dd[key], mm[key], yyyy[key], daycount[key]);
+    printf("\n");
+}
+
+
+
+// Takes in start date and end date and returns the total days in between
+int
+days_year(int sdd, int smm, int syyyy, int dd, int mm, int yyyy){
+	int feb, month, num_days, snum_days, y_days, year;
+	snum_days = sdd;
+	num_days = dd;
+	// Cheaking to see if the starting year is a leap year
+	feb = 28 + (syyyy%4 == 0 && (syyyy%100 != 0 || syyyy%400 == 0));
+	for (month = 1; month < smm; month++){
+		if (month == 2){
+			snum_days += feb;
+		} else if( month == 1 || month == 3 || month == 5 || month == 7
+					|| month == 8 || month == 10 || month == 12){
+			snum_days += 31;
+		} else {
+			snum_days += 30;
+		}
+	}
+	feb = 28 + (yyyy%4 == 0 && (yyyy%100 != 0 || yyyy%400 == 0));
+	// Cheaking to see if the ending year is a leap year
+	for (month = 1; month < mm; month++){
+		if (month == 2){
+			num_days += feb;
+		} else if( month == 1 || month == 3 || month == 5 || month == 7
+					|| month == 8 || month == 10 || month == 12){
+			num_days += 31;
+		} else {
+			num_days += 30;
+		}
+	}
+	if (yyyy != syyyy){
+		snum_days = (DAYS_YEAR_NO_FEB + feb) - snum_days;
+	} else {
+		return num_days - snum_days + END_DATE;
+	}
+	y_days = 0;
+	for (year = syyyy + 1; year < yyyy; year++){
+		// number of days + 1 (cheaking for leap year)
+		y_days += 365 + (year%4 == 0 && (year%100 != 0 || year%400 == 0));
+	}
+	return num_days + snum_days + y_days + END_DATE;
+}
+
+
+// Average Pedestrian observed per month
+void
+avg_ped_month(int yyyy[], int mm[], int daycount[], int key){
+	int i, j, days, tdays, month, cmonth, count, year;
+	double average;
+	// Calculating total months
+	month = (12 - mm[0]) + mm[key] + 12*(yyyy[key] - yyyy[0] - 1);
+	j = 0;
+	//
+	for (i = mm[0] - 1; i < month + mm[0]; i++){
+		cmonth = (i%12) + 1;
+		days = count = 0;
+		year = yyyy[j];
+		// Checking to see the total days in the current months
+		if (cmonth == 1 || cmonth == 3 || cmonth == 5 || cmonth == 7
+					|| cmonth == 8 || cmonth == 10 || cmonth == 12){
+			tdays = 31;
+					} else if (cmonth == 2){
+			tdays = 28 + (year%4 == 0 && (year%100 != 0 || year%400 == 0));
+					} else {
+			tdays = 30;
+					}
+		// Counting the days and count per month. **j initialized before**
+		for (; j <= key; j++){
+			if (cmonth != mm[j] || year != yyyy[j]){
+				break;
+			}
+			days += 1;
+			count += daycount[j];
+		}
+		// Skipping months that were not accounted for
+		if (days == 0){
+			continue;
+		}
+		average = ((1.0*count)/days)/1000;
+		printf("S3: %02d/%4d %02d/%2d days covered, average count =	%02.1fk\n",
+			cmonth, year, days, tdays, average);
+	}
+}
+
+
+
+
+
+
+
+
